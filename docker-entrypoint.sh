@@ -44,10 +44,43 @@ _CFG_
 export OPENCLAW_CONFIG_PATH=/tmp/openclaw-init.json
 echo "[openclaw-init] gateway config: $(cat /tmp/openclaw-init.json)"
 
-# ── Drop privileges and exec gateway ─────────────────────────────────────────
+# ── Pick the runner (gosu drops to node user) ────────────────────────────────
 if command -v gosu >/dev/null 2>&1; then
-  exec gosu node openclaw gateway --allow-unconfigured
+  RUN_AS_NODE="gosu node"
 else
   echo "[openclaw-init] WARN: gosu not found — running gateway as current user"
-  exec openclaw gateway --allow-unconfigured
+  RUN_AS_NODE=""
 fi
+
+# ── Start gateway in background so we can call `openclaw dashboard` after ────
+$RUN_AS_NODE openclaw gateway --allow-unconfigured &
+GATEWAY_PID=$!
+
+# Forward signals to the gateway
+trap 'kill -TERM $GATEWAY_PID 2>/dev/null; wait $GATEWAY_PID' TERM INT
+
+# ── Wait for the gateway to bind, then emit a tokenized dashboard URL ────────
+# The Control UI requires a device-paired signed URL — generating it from the
+# CLI inside the container produces a fresh signature that passes the check.
+sleep 10
+
+DASH_OUTPUT=$($RUN_AS_NODE openclaw dashboard --no-open 2>&1 || echo "dashboard cmd failed")
+echo ""
+echo "════════════════════════════════════════════════════════════════════════"
+echo "[openclaw-init] TOKENIZED DASHBOARD URL — open this in your browser:"
+echo "════════════════════════════════════════════════════════════════════════"
+if [ -n "$RAILWAY_PUBLIC_DOMAIN" ]; then
+  # Rewrite localhost URLs to use the Railway public domain over wss/https
+  echo "$DASH_OUTPUT" | sed \
+    -e "s|http://localhost:[0-9]*|https://${RAILWAY_PUBLIC_DOMAIN}|g" \
+    -e "s|ws://localhost:[0-9]*|wss://${RAILWAY_PUBLIC_DOMAIN}|g" \
+    -e "s|http://127.0.0.1:[0-9]*|https://${RAILWAY_PUBLIC_DOMAIN}|g" \
+    -e "s|ws://127.0.0.1:[0-9]*|wss://${RAILWAY_PUBLIC_DOMAIN}|g"
+else
+  echo "$DASH_OUTPUT"
+fi
+echo "════════════════════════════════════════════════════════════════════════"
+echo ""
+
+# Block on the gateway process — keeps the container alive
+wait $GATEWAY_PID
