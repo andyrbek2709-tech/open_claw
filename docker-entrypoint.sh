@@ -74,5 +74,15 @@ fi
 echo "════════════════════════════════════════════════════════════════════════"
 echo ""
 
+# ── One-shot: approve a Telegram pairing code if set as env var ──────────────
+# Set TELEGRAM_PAIRING_CODE in Railway env vars to the code the bot DMs you,
+# trigger a redeploy, and the approve runs once. Safe to leave the var set
+# afterwards (subsequent approve calls for an already-approved code are no-ops).
+if [ -n "$TELEGRAM_PAIRING_CODE" ]; then
+  echo "[openclaw-init] approving Telegram pairing code: $TELEGRAM_PAIRING_CODE"
+  $RUN_AS_NODE openclaw pairing approve telegram "$TELEGRAM_PAIRING_CODE" 2>&1 || \
+    echo "[openclaw-init] pairing approve failed (already approved or expired code)"
+fi
+
 # Block on the gateway process — keeps the container alive
 wait $GATEWAY_PID
