@@ -52,10 +52,18 @@ else
   RUN_AS_NODE=""
 fi
 
+# ── Try to disable the device-pair plugin (mandatory blocker for remote WS) ──
+# `openclaw plugins disable` writes state under OPENCLAW_STATE_DIR, so /data must
+# already be writable (done above via chown). Failure is non-fatal — gateway
+# will still come up; we just keep the device-pair signature wall.
+$RUN_AS_NODE openclaw plugins disable device-pair 2>&1 \
+  && echo "[openclaw-init] device-pair plugin disabled" \
+  || echo "[openclaw-init] WARN: could not disable device-pair plugin"
+
 # ── Start gateway: --auth token bypasses device-pair (token-only auth) ───────
 # Per `openclaw gateway --help`, --auth accepts: none|token|password|trusted-proxy
 # Token comes from OPENCLAW_GATEWAY_TOKEN env (already set by Railway).
-$RUN_AS_NODE openclaw gateway --allow-unconfigured --auth token &
+$RUN_AS_NODE openclaw gateway --allow-unconfigured --auth token --token "$OPENCLAW_GATEWAY_TOKEN" &
 GATEWAY_PID=$!
 
 # Forward signals to the gateway
