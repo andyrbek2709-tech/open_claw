@@ -64,20 +64,17 @@ trap 'kill -TERM $GATEWAY_PID 2>/dev/null; wait $GATEWAY_PID' TERM INT
 # CLI inside the container produces a fresh signature that passes the check.
 sleep 10
 
-DASH_OUTPUT=$($RUN_AS_NODE openclaw dashboard --no-open 2>&1 || echo "dashboard cmd failed")
 echo ""
 echo "════════════════════════════════════════════════════════════════════════"
-echo "[openclaw-init] TOKENIZED DASHBOARD URL — open this in your browser:"
+echo "[openclaw-init] DASHBOARD URL — open this in your browser:"
 echo "════════════════════════════════════════════════════════════════════════"
-if [ -n "$RAILWAY_PUBLIC_DOMAIN" ]; then
-  # Rewrite localhost URLs to use the Railway public domain over wss/https
-  echo "$DASH_OUTPUT" | sed \
-    -e "s|http://localhost:[0-9]*|https://${RAILWAY_PUBLIC_DOMAIN}|g" \
-    -e "s|ws://localhost:[0-9]*|wss://${RAILWAY_PUBLIC_DOMAIN}|g" \
-    -e "s|http://127.0.0.1:[0-9]*|https://${RAILWAY_PUBLIC_DOMAIN}|g" \
-    -e "s|ws://127.0.0.1:[0-9]*|wss://${RAILWAY_PUBLIC_DOMAIN}|g"
+if [ -n "$RAILWAY_PUBLIC_DOMAIN" ] && [ -n "$OPENCLAW_GATEWAY_TOKEN" ]; then
+  # `openclaw dashboard --no-open` confirms: append the token as URL fragment
+  # (key=`token`) — this auth-method bypasses the device-pair signature check.
+  echo "https://${RAILWAY_PUBLIC_DOMAIN}/#token=${OPENCLAW_GATEWAY_TOKEN}"
 else
-  echo "$DASH_OUTPUT"
+  echo "WARN: RAILWAY_PUBLIC_DOMAIN or OPENCLAW_GATEWAY_TOKEN not set"
+  $RUN_AS_NODE openclaw dashboard --no-open 2>&1 || echo "dashboard cmd failed"
 fi
 echo "════════════════════════════════════════════════════════════════════════"
 echo ""
