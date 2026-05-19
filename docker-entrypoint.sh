@@ -69,15 +69,21 @@ echo "════════════════════════�
 echo "[openclaw-init] DASHBOARD URL — open this in your browser:"
 echo "════════════════════════════════════════════════════════════════════════"
 if [ -n "$RAILWAY_PUBLIC_DOMAIN" ] && [ -n "$OPENCLAW_GATEWAY_TOKEN" ]; then
-  # `openclaw dashboard --no-open` confirms: append the token as URL fragment
-  # (key=`token`) — this auth-method bypasses the device-pair signature check.
   echo "https://${RAILWAY_PUBLIC_DOMAIN}/#token=${OPENCLAW_GATEWAY_TOKEN}"
-else
-  echo "WARN: RAILWAY_PUBLIC_DOMAIN or OPENCLAW_GATEWAY_TOKEN not set"
-  $RUN_AS_NODE openclaw dashboard --no-open 2>&1 || echo "dashboard cmd failed"
 fi
 echo "════════════════════════════════════════════════════════════════════════"
 echo ""
+
+# ── Diagnostic: dump CLI help so we can learn the actual flags/commands ──────
+echo "════════════════ DIAG: openclaw --help ════════════════"
+$RUN_AS_NODE openclaw --help 2>&1 | head -80
+echo "════════════════ DIAG: openclaw dashboard --help ══════"
+$RUN_AS_NODE openclaw dashboard --help 2>&1 | head -50
+echo "════════════════ DIAG: openclaw doctor --help ════════"
+$RUN_AS_NODE openclaw doctor --help 2>&1 | head -50
+echo "════════════════ DIAG: openclaw gateway --help ═══════"
+$RUN_AS_NODE openclaw gateway --help 2>&1 | head -50
+echo "════════════════ END DIAG ════════════════════════════"
 
 # Block on the gateway process — keeps the container alive
 wait $GATEWAY_PID
