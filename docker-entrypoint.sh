@@ -52,16 +52,16 @@ else
   RUN_AS_NODE=""
 fi
 
-# ── Start gateway in background so we can call `openclaw dashboard` after ────
-$RUN_AS_NODE openclaw gateway --allow-unconfigured &
+# ── Start gateway: --auth token bypasses device-pair (token-only auth) ───────
+# Per `openclaw gateway --help`, --auth accepts: none|token|password|trusted-proxy
+# Token comes from OPENCLAW_GATEWAY_TOKEN env (already set by Railway).
+$RUN_AS_NODE openclaw gateway --allow-unconfigured --auth token &
 GATEWAY_PID=$!
 
 # Forward signals to the gateway
 trap 'kill -TERM $GATEWAY_PID 2>/dev/null; wait $GATEWAY_PID' TERM INT
 
-# ── Wait for the gateway to bind, then emit a tokenized dashboard URL ────────
-# The Control UI requires a device-paired signed URL — generating it from the
-# CLI inside the container produces a fresh signature that passes the check.
+# Print the tokenized dashboard URL once the gateway is up
 sleep 10
 
 echo ""
@@ -73,17 +73,6 @@ if [ -n "$RAILWAY_PUBLIC_DOMAIN" ] && [ -n "$OPENCLAW_GATEWAY_TOKEN" ]; then
 fi
 echo "════════════════════════════════════════════════════════════════════════"
 echo ""
-
-# ── Diagnostic: dump CLI help so we can learn the actual flags/commands ──────
-echo "════════════════ DIAG: openclaw --help ════════════════"
-$RUN_AS_NODE openclaw --help 2>&1 | head -80
-echo "════════════════ DIAG: openclaw dashboard --help ══════"
-$RUN_AS_NODE openclaw dashboard --help 2>&1 | head -50
-echo "════════════════ DIAG: openclaw doctor --help ════════"
-$RUN_AS_NODE openclaw doctor --help 2>&1 | head -50
-echo "════════════════ DIAG: openclaw gateway --help ═══════"
-$RUN_AS_NODE openclaw gateway --help 2>&1 | head -50
-echo "════════════════ END DIAG ════════════════════════════"
 
 # Block on the gateway process — keeps the container alive
 wait $GATEWAY_PID
