@@ -92,5 +92,22 @@ if [ -n "$TELEGRAM_PAIRING_CODE" ]; then
     echo "[openclaw-init] pairing approve failed (already approved or expired code)"
 fi
 
+# ── One-shot: approve browser device(s) for Control UI ──────────────────────
+# When the device-pair plugin can't be disabled (latest openclaw still gates
+# the WS handshake on it), set OPENCLAW_APPROVE_DEVICE in Railway to the
+# device id printed on the dashboard "Device pairing required" screen and
+# redeploy. Comma- or space-separated ids are supported for multiple devices.
+if [ -n "$OPENCLAW_APPROVE_DEVICE" ]; then
+  for did in $(echo "$OPENCLAW_APPROVE_DEVICE" | tr ',' ' '); do
+    [ -z "$did" ] && continue
+    echo "[openclaw-init] approving device: $did"
+    $RUN_AS_NODE openclaw devices approve "$did" 2>&1 || \
+      echo "[openclaw-init] device approve failed (already approved, expired, or id wrong)"
+  done
+fi
+
+# ── Convenience: dump approved devices list for the logs ────────────────────
+$RUN_AS_NODE openclaw devices list 2>&1 | head -50 || true
+
 # Block on the gateway process — keeps the container alive
 wait $GATEWAY_PID
