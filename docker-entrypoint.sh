@@ -36,7 +36,8 @@ cat > /tmp/openclaw-init.json << _CFG_
   "gateway": {
     "controlUi": {
       "allowedOrigins": [${ORIGIN_LIST}]
-    }
+    },
+    "trustedProxies": ["100.64.0.0/10", "127.0.0.1", "::1"]
   }
 }
 _CFG_
