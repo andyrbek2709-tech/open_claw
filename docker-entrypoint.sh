@@ -31,7 +31,7 @@ if [ -n "$OPENCLAW_EXTRA_ALLOWED_ORIGIN" ]; then
   ORIGIN_LIST="${ORIGIN_LIST},\"${OPENCLAW_EXTRA_ALLOWED_ORIGIN}\""
 fi
 
-cat > /tmp/openclaw-init.json << _CFG_
+mkdir -p /tmp/openclaw-config && cat > /tmp/openclaw-config/gateway.json << _CFG_
 {
   "gateway": {
     "controlUi": {
@@ -41,8 +41,8 @@ cat > /tmp/openclaw-init.json << _CFG_
   }
 }
 _CFG_
-export OPENCLAW_CONFIG_PATH=/tmp/openclaw-init.json
-echo "[openclaw-init] gateway config: $(cat /tmp/openclaw-init.json)"
+export OPENCLAW_CONFIG_PATH=/tmp/openclaw-config
+echo "[openclaw-init] gateway config: $(cat /tmp/openclaw-config/gateway.json)"
 
 # ── Pick the runner (gosu drops to node user) ────────────────────────────────
 if command -v gosu >/dev/null 2>&1; then
