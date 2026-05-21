@@ -41,8 +41,8 @@ mkdir -p /tmp/openclaw-config && cat > /tmp/openclaw-config/gateway.json << _CFG
   }
 }
 _CFG_
-export OPENCLAW_CONFIG_PATH=/tmp/openclaw-config
-echo "[openclaw-init] gateway config: $(cat /tmp/openclaw-config/gateway.json)"
+export OPENCLAW_CONFIG_PATH=/tmp/openclaw-config/gateway.json
+echo "[openclaw-init] gateway config ($OPENCLAW_CONFIG_PATH): $(cat "$OPENCLAW_CONFIG_PATH")"
 
 # ── Pick the runner (gosu drops to node user) ────────────────────────────────
 if command -v gosu >/dev/null 2>&1; then
